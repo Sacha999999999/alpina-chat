@@ -1,12 +1,18 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST") 
     return res.status(405).json({ text: "Méthode non autorisée" });
-  }
 
   const { message } = req.body;
-  if (!message) return res.status(400).json({ text: "Message vide" });
+  if (!message) 
+    return res.status(400).json({ text: "Message vide" });
 
   try {
+    // Vérifie que la clé existe
+    if (!process.env.HUGGINGFACE_API_KEY) {
+      return res.status(200).json({ text: "Clé Hugging Face manquante. Contactez l'administrateur." });
+    }
+
+    // Appel Hugging Face via l'API
     const response = await fetch("https://api-inference.huggingface.co/models/gpt2", {
       method: "POST",
       headers: {
@@ -24,6 +30,12 @@ export default async function handler(req, res) {
     res.status(200).json({ text: output });
 
   } catch (err) {
+    console.error("Erreur serveur:", err);
+    // Ne jamais planter, renvoyer un message friendly
+    res.status(200).json({ text: "Je rencontre un problème pour répondre, réessayez." });
+  }
+}
+
     console.error("Erreur serveur :", err);
     res.status(200).json({ text: "Je rencontre un problème pour répondre, réessayez." });
   }
