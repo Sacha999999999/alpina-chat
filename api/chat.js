@@ -11,7 +11,8 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/distilgpt2",
+      "https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-125M"
+,
       {
         method: "POST",
         headers: {
