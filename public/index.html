@@ -4,102 +4,59 @@
 <meta charset="UTF-8">
 <title>Alpina Chat</title>
 <style>
-#alp-chat-box{position:fixed;bottom:80px;right:20px;z-index:999999;display:none;width:330px;height:450px;background:#fff;border:2px solid #002D58;border-radius:10px;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,0.3);font-family:Arial;}
-#alp-msgs{flex:1;padding:10px;overflow-y:auto;background:#f9f9f9;font-size:14px;display:flex;flex-direction:column;gap:8px;}
-#quick-buttons button{margin:3px;}
+  body { font-family: Arial; padding: 20px; }
+  #chat { border: 1px solid #ccc; padding: 10px; width: 400px; height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .user { align-self: flex-end; background:#002D58;color:white;padding:8px;border-radius:8px; }
+  .ai { align-self:flex-start; background:#eee;padding:8px;border-radius:8px;border-left:3px solid #D4AF37; }
 </style>
 </head>
 <body>
-
-<div id="alp-chat-box">
-  <div style="background:#002D58; color:#D4AF37; padding:15px; font-weight:bold; display:flex; justify-content:space-between;">
-    <span>⚜️ Alpina IA</span>
-    <span onclick="document.getElementById('alp-chat-box').style.display='none'" style="cursor:pointer;">✕</span>
-  </div>
-
-  <div id="alp-msgs">
-    <div style="background:#eee; padding:8px; border-radius:8px;">
-      Expert fiscal Alpina à votre écoute. Posez votre question.<br><br>
-      Choisissez un sujet :
-    </div>
-
-    <div id="quick-buttons">
-      <button data-value="Fiscalité entreprise">Fiscalité entreprise</button>
-      <button data-value="Optimisation fiscale">Optimisation fiscale</button>
-      <button data-value="Création société">Création société</button>
-    </div>
-  </div>
-
-  <div style="display:flex;">
-    <input type="text" id="alp-input" placeholder="Votre question..." style="flex:1; border:none; border-top:1px solid #ccc; padding:12px; box-sizing:border-box; outline:none;">
-    <button id="send-btn" style="background:#002D58;color:white;border:none;padding:0 15px;cursor:pointer;">➤</button>
-  </div>
-</div>
-
-<button style="position:fixed; bottom:15px; right:20px; z-index:999999; background:#002D58; color:#D4AF37; border:2px solid #D4AF37; border-radius:50%; width:60px; height:60px; cursor:pointer; font-size:24px; box-shadow:0 4px 15px rgba(0,0,0,0.4);" 
-        onclick="var s=document.getElementById('alp-chat-box').style; s.display=(s.display=='flex'?'none':'flex')">
-💬
-</button>
+<h2>Alpina Chat</h2>
+<div id="chat"></div>
+<input type="text" id="input" placeholder="Votre question..." style="width:300px;">
+<button id="send">Envoyer</button>
 
 <script>
-// --- pré-sélections ---
-document.querySelectorAll('#quick-buttons button').forEach(btn=>{
-  btn.onclick = function(){
-    const input = document.getElementById('alp-input');
-    input.value = this.dataset.value;
-    input.focus();
-  };
-});
+const chatDiv = document.getElementById("chat");
+const input = document.getElementById("input");
 
-// --- envoyer message + réponse IA ---
-async function sendMessage(){
-  const input = document.getElementById('alp-input');
-  const m = document.getElementById('alp-msgs');
-  const val = input.value.trim();
-  if(!val) return;
-  input.value = '';
+async function sendMessage() {
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
 
-  // message utilisateur
-  const userMsg = document.createElement('div');
-  userMsg.style = "background:#002D58;color:white;padding:8px;border-radius:8px;align-self:flex-end;";
-  userMsg.textContent = val;
-  m.appendChild(userMsg);
+  // Message utilisateur
+  const userDiv = document.createElement("div");
+  userDiv.className = "user";
+  userDiv.textContent = message;
+  chatDiv.appendChild(userDiv);
 
   try {
-const response = await fetch("/api/chat", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message: val })
-});
-
-
-
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
     const data = await response.json();
-
-    const aiMsg = document.createElement('div');
-    aiMsg.style = "background:#eee; padding:8px; border-radius:8px; align-self:flex-start; border-left:3px solid #D4AF37;";
-    aiMsg.textContent = data.text;
-    m.appendChild(aiMsg);
-
-  } catch(err){
-    const errMsg = document.createElement('div');
-    errMsg.style = "background:#eee; padding:8px; border-radius:8px; align-self:flex-start; border-left:3px solid #D4AF37;";
-    errMsg.textContent = "Erreur de connexion.";
-    m.appendChild(errMsg);
+    const aiDiv = document.createElement("div");
+    aiDiv.className = "ai";
+    aiDiv.textContent = data.text;
+    chatDiv.appendChild(aiDiv);
+  } catch {
+    const errDiv = document.createElement("div");
+    errDiv.className = "ai";
+    errDiv.textContent = "Erreur de connexion.";
+    chatDiv.appendChild(errDiv);
   }
 
-  m.scrollTop = m.scrollHeight;
+  chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-// --- bouton envoyer + Enter ---
-document.getElementById('send-btn').onclick = sendMessage;
-document.getElementById('alp-input').onkeydown = e=>{
-  if(e.key === 'Enter'){
-    e.preventDefault();
-    sendMessage();
-  }
-};
+document.getElementById("send").onclick = sendMessage;
+input.addEventListener("keydown", e => {
+  if(e.key === "Enter") sendMessage();
+});
 </script>
-
 </body>
 </html>
+
