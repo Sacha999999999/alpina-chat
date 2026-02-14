@@ -22,8 +22,19 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
-    const output = data[0]?.generated_text || "Je n'ai pas compris votre message.";
+const data = await response.json();
+let output;
+
+if (Array.isArray(data) && data[0]?.generated_text) {
+    output = data[0].generated_text;
+} else if (data.generated_text) {
+    output = data.generated_text;
+} else if (data.error) {
+    output = "Erreur Hugging Face : " + data.error;
+} else {
+    output = "Je n'ai pas compris votre message.";
+}
+
 
     res.status(200).json({ text: output });
   } catch (err) {
