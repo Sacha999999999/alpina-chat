@@ -1,10 +1,8 @@
 export default async function handler(req, res) {
-  console.log("REQUETE RECUE :", req.body); // On vérifie si le message arrive
-
+  const { message } = req.body;
   try {
     const response = await fetch(
-      "https://router.huggingface.co
-",
+      "https://router.huggingface.co",
       {
         method: "POST",
         headers: {
@@ -12,32 +10,24 @@ export default async function handler(req, res) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: `[INST] Tu es Alpina IA. Réponds brièvement : ${req.body.message} [/INST]`,
+          inputs: `<s>[INST] Tu es Alpina IA, expert fiscal. Réponds court : ${message} [/INST]`,
+          parameters: { max_new_tokens: 200 }
         })
       }
     );
 
     const data = await response.json();
-    console.log("REPONSE HF :", data); // On regarde ce que Hugging Face répond vraiment
+    
+    // On gère le format tableau ou objet de Hugging Face
+    const result = Array.isArray(data) ? data[0] : data;
+    const text = result?.generated_text || result?.error || "Erreur inconnue";
 
-    // Si Hugging Face renvoie une erreur (quota, clé, etc.)
-    if (data.error) {
-      return res.status(200).json({ text: "Hugging Face dit : " + data.error });
-    }
+    // On nettoie la réponse pour enlever l'instruction [INST]
+    const finalAnswer = text.includes('[/INST]') ? text.split('[/INST]').pop().trim() : text;
 
-    // Extraction du texte (cas tableau ou objet)
-    const rawText = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text;
-
-    if (!rawText) {
-      return res.status(200).json({ text: "L'IA a répondu vide. Vérifiez vos crédits HF." });
-    }
-
-    const cleanOutput = rawText.split('[/INST]').pop().trim();
-    res.status(200).json({ text: cleanOutput });
-
+    res.status(200).json({ text: finalAnswer });
   } catch (err) {
-    console.error("ERREUR SERVEUR :", err);
-    res.status(500).json({ text: "Crash du serveur : " + err.message });
+    res.status(500).json({ text: "Erreur serveur : " + err.message });
   }
 }
 
