@@ -11,21 +11,24 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-125M"
-,
+      "https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-125M",
       {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ inputs: message })
+        body: JSON.stringify({ 
+          inputs: message, 
+          parameters: { max_new_tokens: 50 } // <-- important pour générer un texte
+        })
       }
     );
 
     const data = await response.json();
     let output;
 
+    // Hugging Face renvoie maintenant data[0].generated_text ou data.generated_text
     if (Array.isArray(data) && data[0]?.generated_text) {
       output = data[0].generated_text;
     } else if (data.generated_text) {
@@ -37,6 +40,12 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json({ text: output });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ text: "Problème serveur, réessayez." });
+  }
+}
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ text: "Problème serveur, réessayez." });
