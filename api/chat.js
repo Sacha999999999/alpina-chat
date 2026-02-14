@@ -30,22 +30,31 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
+      const data = await response.json();
 
+    // On vérifie si la réponse est dans un tableau (Hugging Face fait souvent ça)
+    // ou si c'est un objet direct.
+    let resultText = "";
     if (Array.isArray(data) && data[0]?.generated_text) {
-      // On récupère uniquement la réponse après l'instruction
-      const fullText = data[0].generated_text;
-      const cleanOutput = fullText.split('[/INST]').pop().trim();
+      resultText = data[0].generated_text;
+    } else if (data.generated_text) {
+      resultText = data.generated_text;
+    }
+
+    if (resultText) {
+      // On enlève l'instruction [INST] pour ne garder que la réponse de l'IA
+      const cleanOutput = resultText.split('[/INST]').pop().trim();
       res.status(200).json({ text: cleanOutput });
     } else if (data.error) {
-      // Si le modèle charge, Hugging Face renvoie une erreur 503
+      // Gestion de l'attente si le modèle dort
       const msg = data.error.includes("currently loading") 
-        ? "L'expert Alpina prépare ses dossiers... (Modèle en cours de chargement, réessayez dans 20 secondes)."
+        ? "L'expert Alpina prépare ses dossiers... Réessayez dans 20 secondes."
         : "Erreur : " + data.error;
       res.status(200).json({ text: msg });
     } else {
-      res.status(200).json({ text: "Je n'ai pas pu générer de réponse. Vérifiez votre quota Hugging Face." });
+      res.status(200).json({ text: "Je n'ai pas reçu de réponse textuelle." });
     }
+
 
   } catch (err) {
     console.error(err);
