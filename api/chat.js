@@ -23,8 +23,8 @@ export default async function handler(req, res) {
     );
 
 const data = await response.json();
-let output;
 
+let output;
 if (Array.isArray(data) && data[0]?.generated_text) {
     output = data[0].generated_text;
 } else if (data.generated_text) {
@@ -35,8 +35,8 @@ if (Array.isArray(data) && data[0]?.generated_text) {
     output = "Je n'ai pas compris votre message.";
 }
 
+res.status(200).json({ text: output });
 
-    res.status(200).json({ text: output });
   } catch (err) {
     console.error("Erreur serveur:", err);
     res.status(200).json({ text: "Problème serveur, réessayez." });
