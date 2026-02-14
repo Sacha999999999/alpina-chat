@@ -3,7 +3,8 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://api-inference.huggingface.co",
+      "https://router.huggingface.co
+",
       {
         method: "POST",
         headers: {
