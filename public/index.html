@@ -3,60 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <title>Alpina Chat</title>
-<style>
-  body { font-family: Arial; padding: 20px; }
-  #chat { border: 1px solid #ccc; padding: 10px; width: 400px; height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-  .user { align-self: flex-end; background:#002D58;color:white;padding:8px;border-radius:8px; }
-  .ai { align-self:flex-start; background:#eee;padding:8px;border-radius:8px;border-left:3px solid #D4AF37; }
-</style>
 </head>
 <body>
 <h2>Alpina Chat</h2>
-<div id="chat"></div>
-<input type="text" id="input" placeholder="Votre question..." style="width:300px;">
+<input id="input" placeholder="Votre question...">
 <button id="send">Envoyer</button>
+<div id="chat"></div>
 
 <script>
-const chatDiv = document.getElementById("chat");
 const input = document.getElementById("input");
+const chatDiv = document.getElementById("chat");
 
-async function sendMessage() {
+document.getElementById("send").onclick = async () => {
   const message = input.value.trim();
   if (!message) return;
   input.value = "";
 
-  // Message utilisateur
   const userDiv = document.createElement("div");
-  userDiv.className = "user";
-  userDiv.textContent = message;
+  userDiv.textContent = "Vous : " + message;
   chatDiv.appendChild(userDiv);
 
   try {
-    const response = await fetch("/api/chat", {
+    const res = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ message })
     });
-    const data = await response.json();
+    const data = await res.json();
     const aiDiv = document.createElement("div");
-    aiDiv.className = "ai";
-    aiDiv.textContent = data.text;
+    aiDiv.textContent = "AI : " + data.text;
     chatDiv.appendChild(aiDiv);
   } catch {
     const errDiv = document.createElement("div");
-    errDiv.className = "ai";
     errDiv.textContent = "Erreur de connexion.";
     chatDiv.appendChild(errDiv);
   }
-
-  chatDiv.scrollTop = chatDiv.scrollHeight;
-}
-
-document.getElementById("send").onclick = sendMessage;
-input.addEventListener("keydown", e => {
-  if(e.key === "Enter") sendMessage();
-});
+};
 </script>
 </body>
 </html>
-
