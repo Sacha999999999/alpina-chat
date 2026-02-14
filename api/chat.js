@@ -1,18 +1,15 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ text: "Méthode non autorisée" });
-  }
 
   const { message } = req.body;
   if (!message) return res.status(400).json({ text: "Message vide" });
 
-  // Vérifie que la clé est bien présente
   if (!process.env.HUGGINGFACE_API_KEY) {
     return res.status(500).json({ text: "Clé Hugging Face manquante." });
   }
 
   try {
-    // Appel Hugging Face
     const response = await fetch(
       "https://api-inference.huggingface.co/models/distilgpt2",
       {
@@ -28,7 +25,6 @@ export default async function handler(req, res) {
     const data = await response.json();
     let output;
 
-    // Gestion des différents formats possibles de Hugging Face
     if (Array.isArray(data) && data[0]?.generated_text) {
       output = data[0].generated_text;
     } else if (data.generated_text) {
@@ -40,9 +36,8 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json({ text: output });
-
   } catch (err) {
-    console.error("Erreur serveur:", err);
+    console.error(err);
     res.status(500).json({ text: "Problème serveur, réessayez." });
   }
 }
