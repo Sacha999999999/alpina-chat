@@ -18,9 +18,9 @@ export default async function handler(req, res) {
           "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ 
-          inputs: message, 
-          parameters: { max_new_tokens: 50 } // <-- important pour générer un texte
+        body: JSON.stringify({
+          inputs: [message],   // <-- mettre message DANS un tableau
+          parameters: { max_new_tokens: 50 }
         })
       }
     );
@@ -28,26 +28,19 @@ export default async function handler(req, res) {
     const data = await response.json();
     let output;
 
-    // Hugging Face renvoie maintenant data[0].generated_text ou data.generated_text
+    // Maintenant, le texte généré se trouve dans data[0].generated_text
     if (Array.isArray(data) && data[0]?.generated_text) {
       output = data[0].generated_text;
-    } else if (data.generated_text) {
-      output = data.generated_text;
     } else if (data.error) {
       output = "Erreur Hugging Face : " + data.error;
     } else {
       output = "Je n'ai pas compris votre message.";
     }
 
-    res.status(200).json({ text: output });
+    res.status(200).json({ text: output.trim() });
   } catch (err) {
     console.error(err);
     res.status(500).json({ text: "Problème serveur, réessayez." });
   }
 }
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ text: "Problème serveur, réessayez." });
-  }
-}
