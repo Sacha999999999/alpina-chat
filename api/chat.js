@@ -19,7 +19,10 @@ export default async function handler(req, res) {
   if (preponses[message]) return res.status(200).json({ text: preponses[message] });
 
   try {
-    const response = await fetch("https://api-inference.huggingface.co", {
+    const response = await fetch(
+  "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+  {
+
       headers: { 
         "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
         "Content-Type": "application/json" 
