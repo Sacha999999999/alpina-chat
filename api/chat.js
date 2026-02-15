@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   try {
     // 1. URL DU ROUTER (COURTE ET OBLIGATOIRE)
-    const hfResponse = await fetch("https://router.huggingface.co", {
+    const hfResponse = await fetch("https://router.huggingface.co/hf-inference/v1/chat/completions", {
       headers: {
         "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
         "Content-Type": "application/json",
