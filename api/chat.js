@@ -1,8 +1,5 @@
-import { huggingface } from '@ai-sdk/huggingface';
-import { generateText } from 'ai';
-
 export default async function handler(req, res) {
-  // Configuration CORS pour Webador
+  // 1. Headers de sécurité (CORS) pour Webador
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,9 +7,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const userMessage = req.body?.message;
-  if (!userMessage) return res.status(400).json({ text: "Message vide." });
 
-  // 1. Tes PRÉ-RÉPONSES
+  // 2. Vos PRÉ-RÉPONSES (Indestructibles)
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -24,13 +20,14 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  if (preponses[userMessage]) {
+  // On vérifie les préréponses AVANT d'essayer de contacter l'IA
+  if (userMessage && preponses[userMessage]) {
     return res.status(200).json({ text: preponses[userMessage] });
   }
 
-  // 2. IA OUVERTE (Mistral)
-   try {
-    const response = await fetch(
+  // 3. IA OUVERTE (Appel direct sans bibliothèque pour éviter les bugs de build)
+  try {
+    const hfResponse = await fetch(
       "https://api-inference.huggingface.co",
       {
         headers: {
@@ -39,19 +36,26 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
-          options: { wait_for_model: true } // FORCE l'attente si le modèle dort
+          inputs: `[INST] Tu es un expert financier suisse. Réponds en 2 phrases à : ${userMessage} [/INST]`,
+          options: { wait_for_model: true }
         }),
       }
     );
 
-    const result = await response.json();
-    const aiText = result[0]?.generated_text || result.generated_text || "";
-    const finalAnswer = aiText.split("[/INST]").pop().trim();
+    const result = await hfResponse.json();
+    let aiText = "";
 
-    return res.status(200).json({ text: finalAnswer });
+    if (Array.isArray(result)) {
+      aiText = result[0].generated_text;
+    } else {
+      aiText = result.generated_text || "";
+    }
+
+    const cleanText = aiText.includes("[/INST]") ? aiText.split("[/INST]").pop().trim() : aiText;
+
+    return res.status(200).json({ text: cleanText || "Je peux vous aider, précisez votre demande ?" });
 
   } catch (error) {
-    // Si ça rate, c'est que le token n'est pas reconnu par l'API
-    return res.status(200).json({ text: "Erreur technique API. Vérifiez votre clé sur Vercel." });
+    return res.status(200).json({ text: "Service en cours de mise à jour. Retentez dans une minute ?" });
   }
+}
