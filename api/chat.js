@@ -25,7 +25,8 @@ export default async function handler(req, res) {
   try {
     const hfResponse = await fetch(
       "https://router.huggingface.co
-/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3",
+/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3
+",
       {
         headers: {
           "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
