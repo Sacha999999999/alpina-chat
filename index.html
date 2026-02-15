@@ -24,7 +24,7 @@ document.getElementById("send").onclick = async () => {
   chatDiv.appendChild(userDiv);
 
   try {
-    const res = await fetch("/api/chat", {
+    const res = await fetch("https://alpina-chat.vercel.app", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ message })
