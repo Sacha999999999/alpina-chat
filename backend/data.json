@@ -1,7 +1,0 @@
-{
-  "conversations": [],
-  "preResponses": [
-    { "question": "Bonjour", "answer": "Bonjour ! Comment puis-je vous aider ?" },
-    { "question": "Quels sont vos services ?", "answer": "Nous proposons du conseil, de la formation et de l’accompagnement digital." }
-  ]
-}
