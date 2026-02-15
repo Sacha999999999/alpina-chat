@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   const { message } = req.body;
   const HF_KEY = process.env.HUGGINGFACE_API_KEY;
 
-  // 1. RÉPONSES DIRECTES (FONCTIONNENT MÊME SANS IA)
+  // 1. RÉPONSES DE CONVERSION (Boutons) - NE DÉPENDENT PAS DE L'IA
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -20,10 +20,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: preponses[message] });
   }
 
-  // 2. APPEL IA AVEC GESTION DE FORMAT STRICTE
+  // 2. APPEL IA AVEC L'URL DU ROUTER MISE À JOUR
   try {
     const response = await fetch(
-      "https://api-inference.huggingface.co",
+      "https://router.huggingface.co",
       {
         headers: { 
           Authorization: `Bearer ${HF_KEY}`,
@@ -31,28 +31,26 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `<s>[INST] Tu es l'expert d'Alpina Conseil. Réponds en 2 phrases max. Valide le choix, donne un conseil flash, et termine par une question. Question : ${message} [/INST]`,
-          parameters: { max_new_tokens: 150, temperature: 0.5 }
+          model: "mistralai/Mistral-7B-Instruct-v0.2",
+          messages: [
+            { role: "system", content: "Tu es l'expert d'Alpina Conseil. Réponds en 2 phrases max. Valide le choix, donne un conseil flash, et termine par une question." },
+            { role: "user", content: message }
+          ],
+          max_tokens: 150,
+          temperature: 0.5
         }),
       }
     );
 
     const data = await response.json();
     
-    // GESTION DU FORMAT (Tableau vs Objet)
-    let aiText = "";
-    if (Array.isArray(data)) {
-      aiText = data[0].generated_text;
-    } else {
-      aiText = data.generated_text || data.error || "";
-    }
+    // Le format "Router" suit désormais le standard OpenAI
+    const aiText = data.choices?.[0]?.message?.content || "Je n'ai pas pu générer de réponse. Pouvons-nous en discuter de vive voix ?";
 
-    // NETTOYAGE DU TEXTE
-    const finalAnswer = aiText.split('[/INST]').pop().trim();
-
-    res.status(200).json({ text: finalAnswer || "Je n'ai pas pu générer de réponse. Pouvons-nous en discuter de vive voix ?" });
+    res.status(200).json({ text: aiText });
 
   } catch (error) {
-    res.status(200).json({ text: "Une erreur technique s'est produite, mais votre question est pertinente. Fixons un rendez-vous pour en parler !" });
+    res.status(200).json({ text: "Une erreur technique s'est produite. Nos experts sont cependant disponibles pour répondre à votre question lors d'un court entretien." });
   }
 }
+
