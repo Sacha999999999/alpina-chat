@@ -1,23 +1,18 @@
-import { createHuggingFace } from '@ai-sdk/huggingface';
+import { huggingface } from '@ai-sdk/huggingface';
 import { generateText } from 'ai';
 
-const hf = createHuggingFace({
-  apiKey: process.env.HUGGINGFACE_API_KEY,
-});
-
 export default async function handler(req, res) {
-  // 1. Headers CORS pour Webador
+  // Configuration CORS pour Webador
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ text: "Méthode non autorisée" });
 
   const userMessage = req.body?.message;
-  if (!userMessage) return res.status(400).json({ text: "Message manquant." });
+  if (!userMessage) return res.status(400).json({ text: "Message vide." });
 
-  // 2. Tes PRÉ-RÉPONSES (Priorité absolue)
+  // 1. Tes PRÉ-RÉPONSES
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -29,25 +24,19 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  // Si l'utilisateur clique sur un bouton de pré-réponse
   if (preponses[userMessage]) {
     return res.status(200).json({ text: preponses[userMessage] });
   }
 
-  // 3. IA MISTRAL pour les questions ouvertes
+  // 2. IA OUVERTE (Mistral)
   try {
     const { text } = await generateText({
-      model: hf('mistralai/Mistral-Small-24B-Instruct-2501'),
-      system: "Tu es un expert financier suisse haut de gamme. Réponds en 2 phrases maximum. Sois précis, professionnel et invite toujours l'utilisateur à affiner sa demande.",
+      model: huggingface('mistralai/Mistral-Small-24B-Instruct-2501'),
       prompt: userMessage,
+      system: "Tu es un expert financier suisse. Réponds brièvement en 2 phrases."
     });
-
     return res.status(200).json({ text: text.trim() });
-  } catch (error) {
-    console.error("Détail erreur HF:", error);
-    // Message de secours intelligent
-    return res.status(200).json({ 
-      text: "C'est une excellente question qui mérite une analyse de votre dossier. Souhaitez-vous que nous fassions un point rapide sur votre situation ?" 
-    });
+  } catch (e) {
+    return res.status(200).json({ text: "Une analyse personnalisée est nécessaire. Pouvons-nous en discuter ?" });
   }
 }
