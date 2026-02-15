@@ -9,7 +9,6 @@ export default async function handler(req, res) {
   const message = req.body?.message;
   if (!message) return res.status(400).json({ text: "Message manquant." });
 
-  // 1️⃣ Réponses pré-définies
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -21,9 +20,10 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
+  // Réponse pré-définie
   if (preponses[message]) return res.status(200).json({ text: preponses[message] });
 
-  // 2️⃣ Questions ouvertes → Hugging Face Mistral
+  // 🎯 Questions ouvertes → Hugging Face
   try {
     const hfResponse = await fetch(
       "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
@@ -45,15 +45,15 @@ export default async function handler(req, res) {
 
     const data = await hfResponse.json();
 
-    // Extraction fiable du texte
+    // Extraction du texte généré
     let aiText = "";
-    if (Array.isArray(data) && data[0].generated_text) {
+    if (Array.isArray(data) && data[0]?.generated_text) {
       aiText = data[0].generated_text;
     } else if (data.generated_text) {
       aiText = data.generated_text;
     }
 
-    // Nettoyage pour ne garder que la réponse après instruction
+    // Nettoyage pour garder seulement la réponse après [/INST]
     if (aiText.includes('[/INST]')) {
       aiText = aiText.split('[/INST]').pop().trim();
     }
