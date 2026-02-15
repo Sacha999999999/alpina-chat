@@ -2,9 +2,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   const { message } = req.body;
-  const HF_TOKEN = process.env.HUGGINGFACE_API_KEY; // Assure-toi que le nom correspond à ton interface Vercel
+  const HF_KEY = process.env.HUGGINGFACE_API_KEY;
 
-  // 1. TES RÉPONSES DE CONVERSION (Boutons du Front)
+  // 1. RÉPONSES DIRECTES (FONCTIONNENT MÊME SANS IA)
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -16,25 +16,22 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  // Si l'utilisateur a cliqué sur un thème, on répond instantanément
   if (preponses[message]) {
     return res.status(200).json({ text: preponses[message] });
   }
 
-  // 2. LOGIQUE IA POUR LES QUESTIONS LIBRES (URL CORRIGÉE)
+  // 2. APPEL IA AVEC GESTION DE FORMAT STRICTE
   try {
-    const promptInstruction = "Tu es l'expert d'Alpina Conseil. Réponds en 2 phrases max. Valide le choix, donne un conseil flash, et termine par une question pour aider le client.";
-
     const response = await fetch(
-      "https://router.huggingface.co",
+      "https://api-inference.huggingface.co",
       {
         headers: { 
-          Authorization: `Bearer ${HF_TOKEN}`,
+          Authorization: `Bearer ${HF_KEY}`,
           "Content-Type": "application/json"
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `<s>[INST] ${promptInstruction} Question : ${message} [/INST]`,
+          inputs: `<s>[INST] Tu es l'expert d'Alpina Conseil. Réponds en 2 phrases max. Valide le choix, donne un conseil flash, et termine par une question. Question : ${message} [/INST]`,
           parameters: { max_new_tokens: 150, temperature: 0.5 }
         }),
       }
@@ -42,18 +39,20 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Hugging Face Router renvoie souvent un tableau [ { generated_text: "..." } ]
-    const result = Array.isArray(data) ? data[0] : data;
-    let aiText = result?.generated_text || "";
+    // GESTION DU FORMAT (Tableau vs Objet)
+    let aiText = "";
+    if (Array.isArray(data)) {
+      aiText = data[0].generated_text;
+    } else {
+      aiText = data.generated_text || data.error || "";
+    }
 
-    // Nettoyage de la réponse
-    const finalAnswer = aiText.includes('[/INST]') 
-      ? aiText.split('[/INST]').pop().trim() 
-      : aiText || "C'est une excellente question. Pour vous répondre précisément, seriez-vous disponible pour un court échange ?";
+    // NETTOYAGE DU TEXTE
+    const finalAnswer = aiText.split('[/INST]').pop().trim();
 
-    res.status(200).json({ text: finalAnswer });
+    res.status(200).json({ text: finalAnswer || "Je n'ai pas pu générer de réponse. Pouvons-nous en discuter de vive voix ?" });
 
   } catch (error) {
-    res.status(200).json({ text: "C'est un sujet important qui mérite une analyse personnalisée. Souhaitez-vous fixer un rendez-vous pour en discuter ?" });
+    res.status(200).json({ text: "Une erreur technique s'est produite, mais votre question est pertinente. Fixons un rendez-vous pour en parler !" });
   }
 }
