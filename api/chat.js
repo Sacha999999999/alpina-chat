@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   try {
     // L'URL DOIT ETRE EXACTEMENT CELLE-CI POUR EVITER LE "NOT FOUND"
-    const hfUrl = "https://router.huggingface.co/hf-infernece/v1/chat/completions";
+    const hfUrl = "https://router.huggingface.co/hf-inference/v1/chat/completions";
 
     const hfResponse = await fetch(hfUrl, {
       headers: {
