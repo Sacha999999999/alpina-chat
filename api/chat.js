@@ -29,14 +29,29 @@ export default async function handler(req, res) {
   }
 
   // 2. IA OUVERTE (Mistral)
-  try {
-    const { text } = await generateText({
-      model: huggingface('mistralai/Mistral-7B-Instruct-v0.3'),
-      prompt: userMessage,
-      system: "Tu es un expert financier suisse. Réponds brièvement en 2 phrases."
-    });
-    return res.status(200).json({ text: text.trim() });
-  } catch (e) {
-    return res.status(200).json({ text: "Une analyse personnalisée est nécessaire. Pouvons-nous en discuter ?" });
+   try {
+    const response = await fetch(
+      "https://api-inference.huggingface.co",
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({
+          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
+          options: { wait_for_model: true } // FORCE l'attente si le modèle dort
+        }),
+      }
+    );
+
+    const result = await response.json();
+    const aiText = result[0]?.generated_text || result.generated_text || "";
+    const finalAnswer = aiText.split("[/INST]").pop().trim();
+
+    return res.status(200).json({ text: finalAnswer });
+
+  } catch (error) {
+    // Si ça rate, c'est que le token n'est pas reconnu par l'API
+    return res.status(200).json({ text: "Erreur technique API. Vérifiez votre clé sur Vercel." });
   }
-}
