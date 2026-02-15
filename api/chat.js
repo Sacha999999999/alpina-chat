@@ -1,7 +1,5 @@
-// chat.js (Vercel) - prêt à remplacer l'ancien
-
 export default async function handler(req, res) {
-  // CORS pour que le front Webador puisse appeler cette API
+  // Autorisations CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -9,7 +7,7 @@ export default async function handler(req, res) {
 
   const { message } = req.body;
 
-  // === 1. Réponses fixes pour les pré-choix ===
+  // Réponses pré-définies pour les boutons rapides
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -21,11 +19,10 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  if (preponses[message]) {
-    return res.status(200).json({ text: preponses[message] });
-  }
+  // Si c'est une réponse pré-définie, on la renvoie directement
+  if (preponses[message]) return res.status(200).json({ text: preponses[message] });
 
-  // === 2. Questions libres → appel Mistral via Hugging Face ===
+  // Sinon, on appelle Hugging Face Mistral pour une réponse libre
   try {
     const response = await fetch(
       "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
@@ -36,38 +33,41 @@ export default async function handler(req, res) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: `<s>[INST] Tu es l'expert financier d'Alpina Conseil en Suisse. Réponds de manière claire, concise et professionnelle (2-3 phrases maximum). Question client : ${message} [/INST]`,
-          parameters: { max_new_tokens: 150, temperature: 0.4 }
+          inputs: `Tu es un expert financier pour Alpina Conseil. Réponds clairement et concisément (max 2 phrases) à la question suivante : "${message}"`,
+          parameters: {
+            max_new_tokens: 150,
+            temperature: 0.4,
+            return_full_text: false
+          }
         })
       }
     );
 
     const data = await response.json();
 
-    // === 3. Extraction du texte généré ===
     let aiText = "";
 
-    if (Array.isArray(data)) {
-      // Hugging Face peut renvoyer un tableau
-      aiText = data[0]?.generated_text || "";
-    } else {
-      aiText = data.generated_text || "";
+    // Lecture robuste selon le format renvoyé par Hugging Face
+    if (Array.isArray(data) && data.length && data[0].generated_text) {
+      aiText = data[0].generated_text.trim();
+    } else if (data.generated_text) {
+      aiText = data.generated_text.trim();
     }
 
-    // Nettoyage pour retirer la balise d’instruction
-    if (aiText.includes('[/INST]')) {
-      aiText = aiText.split('[/INST]').pop().trim();
-    }
-
-    // Si la réponse est vide, fallback
+    // Si Hugging Face ne renvoie rien de correct, fallback
     if (!aiText) {
       aiText = "Merci pour votre question. Pouvez-vous préciser votre situation afin que je vous réponde de manière adaptée ?";
     }
 
-    return res.status(200).json({ text: aiText });
+    res.status(200).json({ text: aiText });
 
-  } catch (err) {
-    console.error("Erreur API Hugging Face:", err);
-    return res.status(200).json({ text: "C'est une excellente question. Pour vous répondre précisément, seriez-vous disponible pour un court échange ?" });
+  } catch (error) {
+    console.error("Erreur Hugging Face :", error);
+    res.status(200).json({
+      text: "Merci pour votre question. Pouvez-vous préciser votre situation afin que je vous réponde de manière adaptée ?"
+    });
+  }
+}
+ur vous répondre précisément, seriez-vous disponible pour un court échange ?" });
   }
 }
