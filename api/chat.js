@@ -1,13 +1,15 @@
 export default async function handler(req, res) {
-  // Autorisations CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ text: "Méthode non autorisée" });
 
-  const { message } = req.body;
+  const message = req.body?.message;
+  if (!message) return res.status(400).json({ text: "Message manquant." });
 
-  // Réponses pré-définies pour les boutons rapides
+  // 1️⃣ Réponses pré-définies
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -19,12 +21,11 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  // Si c'est une réponse pré-définie, on la renvoie directement
   if (preponses[message]) return res.status(200).json({ text: preponses[message] });
 
-  // Sinon, on appelle Hugging Face Mistral pour une réponse libre
+  // 2️⃣ Questions ouvertes → Hugging Face Mistral
   try {
-    const response = await fetch(
+    const hfResponse = await fetch(
       "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
       {
         method: "POST",
@@ -33,41 +34,38 @@ export default async function handler(req, res) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: `Tu es un expert financier pour Alpina Conseil. Réponds clairement et concisément (max 2 phrases) à la question suivante : "${message}"`,
+          inputs: `<s>[INST] Tu es l'expert financier d'Alpina Conseil en Suisse. Réponds de manière claire et concise (2-3 phrases max) : ${message} [/INST]`,
           parameters: {
             max_new_tokens: 150,
-            temperature: 0.4,
-            return_full_text: false
+            temperature: 0.4
           }
         })
       }
     );
 
-    const data = await response.json();
+    const data = await hfResponse.json();
 
+    // Extraction fiable du texte
     let aiText = "";
-
-    // Lecture robuste selon le format renvoyé par Hugging Face
-    if (Array.isArray(data) && data.length && data[0].generated_text) {
-      aiText = data[0].generated_text.trim();
+    if (Array.isArray(data) && data[0].generated_text) {
+      aiText = data[0].generated_text;
     } else if (data.generated_text) {
-      aiText = data.generated_text.trim();
+      aiText = data.generated_text;
     }
 
-    // Si Hugging Face ne renvoie rien de correct, fallback
-    if (!aiText) {
-      aiText = "Merci pour votre question. Pouvez-vous préciser votre situation afin que je vous réponde de manière adaptée ?";
+    // Nettoyage pour ne garder que la réponse après instruction
+    if (aiText.includes('[/INST]')) {
+      aiText = aiText.split('[/INST]').pop().trim();
     }
 
-    res.status(200).json({ text: aiText });
+    if (!aiText) aiText = "Merci pour votre question. Pouvez-vous préciser votre situation afin que je vous réponde de manière adaptée ?";
+
+    return res.status(200).json({ text: aiText });
 
   } catch (error) {
-    console.error("Erreur Hugging Face :", error);
-    res.status(200).json({
+    console.error("Erreur Hugging Face:", error);
+    return res.status(200).json({
       text: "Merci pour votre question. Pouvez-vous préciser votre situation afin que je vous réponde de manière adaptée ?"
     });
-  }
-}
-ur vous répondre précisément, seriez-vous disponible pour un court échange ?" });
   }
 }
