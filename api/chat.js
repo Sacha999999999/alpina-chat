@@ -1,15 +1,15 @@
 export default async function handler(req, res) {
-  // 1. AUTORISATION CORS (Pour Webador)
+  // 1. AUTORISATION CORS (Pour que Webador puisse parler à Vercel)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // 2. LECTURE DU MESSAGE (Peu importe comment Webador l'envoie)
-  const message = req.body.message || req.body;
+  // 2. RÉCUPÉRATION DU MESSAGE
+  const { message } = req.body;
 
-  // 3. RÉPONSES AUTOMATIQUES (Boutons)
+  // 3. RÉPONSES AUTOMATIQUES (Boutons de thèmes)
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: preponses[message] });
   }
 
-  // 4. APPEL IA (Router V1 complet)
+  // 4. APPEL IA (Lien Router V1 complet)
   try {
     const response = await fetch("https://router.huggingface.co", {
       headers: { 
@@ -35,12 +35,17 @@ export default async function handler(req, res) {
       method: "POST",
       body: JSON.stringify({
         model: "mistralai/Mistral-7B-Instruct-v0.2",
-        messages: [{ role: "user", content: "Expert Alpina Conseil. Réponds en 2 sentences : " + (message || "") }],
+        messages: [
+          { role: "system", content: "Tu es l'expert d'Alpina Conseil en Suisse. Réponds en 2 phrases maximum et termine toujours par une question de qualification." },
+          { role: "user", content: message }
+        ],
         max_tokens: 150
       })
     });
 
     const data = await response.json();
+    
+    // Extraction sécurisée du texte
     const aiText = data.choices[0].message.content;
     res.status(200).json({ text: aiText });
 
