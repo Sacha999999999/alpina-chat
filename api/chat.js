@@ -1,13 +1,22 @@
 export default async function handler(req, res) {
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ text: "Méthode non autorisée" });
+  }
 
   const message = req.body?.message;
-if (!message) {
-  return res.status(400).json({ text: "Message manquant." });
-}
+
+  if (!message) {
+    return res.status(400).json({ text: "Message manquant." });
+  }
 
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
@@ -20,41 +29,13 @@ if (!message) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  if (preponses[message]) return res.status(200).json({ text: preponses[message] });
-
-try {
-
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/google/flan-t5-large",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        inputs: `Tu es conseiller financier senior chez Alpina Conseil en Suisse.
-Réponds de manière professionnelle, claire et concise (maximum 3 phrases).
-Question : ${message}`
-      })
-    }
-  );
-
-  const data = await response.json();
-
-  let aiText = "";
-
-  if (Array.isArray(data) && data[0]?.generated_text) {
-    aiText = data[0].generated_text;
+  if (preponses[message]) {
+    return res.status(200).json({ text: preponses[message] });
   }
 
-  res.status(200).json({
-    text: aiText || "Je traite votre demande. Pour vous apporter une réponse précise, pourriez-vous préciser votre situation ?"
+  // TEMPORAIRE : réponse simple pour stabiliser
+  return res.status(200).json({
+    text: "Merci pour votre question. Pouvez-vous préciser votre situation afin que je vous réponde de manière adaptée ?"
   });
 
-} catch (error) {
-  console.error("Erreur IA:", error);
-  res.status(500).json({
-    text: "Un instant, je vérifie les informations pour vous."
-  });
 }
