@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Alpina Chat</title>
+</head>
+<body>
+<h2>Alpina Chat</h2>
+<input id="input" placeholder="Votre question...">
+<button id="send">Envoyer</button>
+<div id="chat"></div>
+
+<script>
+const input = document.getElementById("input");
+const chatDiv = document.getElementById("chat");
+
+document.getElementById("send").onclick = async () => {
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+
+  const userDiv = document.createElement("div");
+  userDiv.textContent = "Vous : " + message;
+  chatDiv.appendChild(userDiv);
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    const aiDiv = document.createElement("div");
+    aiDiv.textContent = "AI : " + data.text;
+    chatDiv.appendChild(aiDiv);
+  } catch {
+    const errDiv = document.createElement("div");
+    errDiv.textContent = "Erreur de connexion.";
+    chatDiv.appendChild(errDiv);
+  }
+};
+</script>
+</body>
+</html>
