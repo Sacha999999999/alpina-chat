@@ -2,6 +2,8 @@
   "name": "alpina-chat",
   "version": "1.0.0",
   "dependencies": {
-    "@huggingface/inference": "^2.6.4"
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
   }
 }
