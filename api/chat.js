@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // LA SEULE URL QUI MARCHE EN 2026 AVEC LE ROUTER
+    // URL COMPLÈTE AVEC LE CHEMIN DU MODÈLE POUR LE ROUTER
     const hfResponse = await fetch(
       "https://router.huggingface.co",
       {
@@ -40,16 +40,19 @@ export default async function handler(req, res) {
       }
     );
 
+    // On vérifie si la réponse est OK avant de parser le JSON
+    if (!hfResponse.ok) {
+        const errorText = await hfResponse.text();
+        return res.status(200).json({ text: "Erreur HF (" + hfResponse.status + "): " + errorText });
+    }
+
     const result = await hfResponse.json();
     
     let aiText = "";
-    // On extrait le texte du tableau [0]
     if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
       aiText = result.generated_text;
-    } else if (result.error) {
-      aiText = "Note : " + result.error;
     }
 
     if (aiText.includes("[/INST]")) {
