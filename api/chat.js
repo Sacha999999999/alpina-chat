@@ -23,9 +23,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // URL COMPLÈTE CORRIGÉE CI-DESSOUS
+    // NOUVELLE URL 2026 : Utilisation du Router Hugging Face
     const hfResponse = await fetch(
-      "https://api-inference.huggingface.co",
+      "https://router.huggingface.co",
       {
         headers: {
           "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -33,7 +33,8 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] ${userMessage} [/INST]`,
+          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
+          parameters: { max_new_tokens: 200 },
           options: { wait_for_model: true }
         }),
       }
@@ -41,14 +42,14 @@ export default async function handler(req, res) {
 
     const result = await hfResponse.json();
     
-    // GESTION DU FORMAT TABLEAU OU OBJET
     let aiText = "";
+    // Le Router peut renvoyer un tableau ou un objet direct
     if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
       aiText = result.generated_text;
     } else if (result.error) {
-      aiText = "Erreur HF: " + result.error;
+      aiText = "Note : " + result.error;
     }
 
     if (aiText.includes("[/INST]")) {
@@ -56,10 +57,10 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ 
-      text: aiText || "Désolé, l'IA n'a pas pu générer de réponse." 
+      text: aiText || "L'IA n'a pas pu générer de réponse précise. Réessayez ?" 
     });
 
   } catch (error) {
-    return res.status(200).json({ text: "Erreur de connexion avec l'IA." });
+    return res.status(200).json({ text: "Erreur de connexion au nouveau router HF." });
   }
 }
