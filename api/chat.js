@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // 1. Headers de sécurité (CORS) pour Webador
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -8,7 +7,6 @@ export default async function handler(req, res) {
 
   const userMessage = req.body?.message;
 
-  // 2. Vos PRÉ-RÉPONSES (Indestructibles)
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -20,12 +18,10 @@ export default async function handler(req, res) {
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  // On vérifie les préréponses AVANT d'essayer de contacter l'IA
   if (userMessage && preponses[userMessage]) {
     return res.status(200).json({ text: preponses[userMessage] });
   }
 
-  // 3. IA OUVERTE (Version corrigée pour le format Mistral)
   try {
     const hfResponse = await fetch(
       "https://api-inference.huggingface.co",
@@ -36,7 +32,7 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
+          inputs: "[INST] " + userMessage + " [/INST]",
           options: { wait_for_model: true }
         }),
       }
@@ -44,22 +40,21 @@ export default async function handler(req, res) {
 
     const result = await hfResponse.json();
     
-    // Correction ici : on gère si c'est un tableau (fréquent chez HF)
-    let aiText = Array.isArray(result) ? result[0].generated_text : (result.generated_text || "");
-
-    // On nettoie pour ne garder que la réponse après la balise [/INST]
-    if (aiText.includes("[/INST]")) {
-      aiText = aiText.split("[/INST]").pop().trim();
+    // Extraction simplifiée au maximum pour éviter l'erreur de connexion
+    let responseText = "";
+    if (Array.isArray(result) && result[0].generated_text) {
+        responseText = result[0].generated_text;
+    } else if (result.generated_text) {
+        responseText = result.generated_text;
     }
 
+    const cleanText = responseText.split("[/INST]").pop().trim();
+
     return res.status(200).json({ 
-      text: aiText || "Je peux vous aider sur ce point, pouvez-vous préciser votre question ?" 
+      text: cleanText || "Je peux vous aider, précisez votre demande ?" 
     });
 
   } catch (error) {
-    return res.status(200).json({ text: "Une petite erreur technique, veuillez reformuler votre question ?" });
-  }
-
-    return res.status(200).json({ text: "Service en cours de mise à jour. Retentez dans une minute ?" });
+    return res.status(200).json({ text: "Erreur de connexion API." });
   }
 }
