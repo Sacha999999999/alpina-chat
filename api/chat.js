@@ -18,35 +18,39 @@ export default async function handler(req, res) {
 
   if (preponses[message]) return res.status(200).json({ text: preponses[message] });
 
-  try {
-    const response = await fetch(
-  "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-  {
+try {
 
-      headers: { 
-        "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-        "Content-Type": "application/json" 
-      },
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/google/flan-t5-large",
+    {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        inputs: `<s>[INST] Tu es l'expert d'Alpina Conseil en Suisse. Réponds en 2 phrases max : ${message} [/INST]`,
-        parameters: { max_new_tokens: 150, temperature: 0.5 }
+        inputs: `Tu es conseiller financier senior chez Alpina Conseil en Suisse.
+Réponds de manière professionnelle, claire et concise (maximum 3 phrases).
+Question : ${message}`
       })
-    });
-
-    const data = await response.json();
-    
-    // On extrait le texte peu importe le format renvoyé par Hugging Face
-    let aiText = Array.isArray(data) ? data[0].generated_text : data.generated_text;
-    
-    // On nettoie pour ne garder que la réponse après l'instruction
-    if (aiText.includes('[/INST]')) {
-      aiText = aiText.split('[/INST]').pop().trim();
     }
+  );
 
-    res.status(200).json({ text: aiText || "Je n'ai pas pu générer de réponse." });
+  const data = await response.json();
 
-  } catch (error) {
-    res.status(200).json({ text: "C'est une excellente question. Pour vous répondre précisément, seriez-vous disponible pour un court échange ?" });
+  let aiText = "";
+
+  if (Array.isArray(data) && data[0]?.generated_text) {
+    aiText = data[0].generated_text;
   }
+
+  res.status(200).json({
+    text: aiText || "Je traite votre demande. Pour vous apporter une réponse précise, pourriez-vous préciser votre situation ?"
+  });
+
+} catch (error) {
+  console.error("Erreur IA:", error);
+  res.status(500).json({
+    text: "Un instant, je vérifie les informations pour vous."
+  });
 }
