@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // URL ENFIN COMPLÈTE : Router + Chemin du modèle
+    // L'URL DOIT ÊTRE COMPLÈTE COMME CI-DESSOUS
     const hfResponse = await fetch(
       "https://router.huggingface.co",
       {
@@ -40,19 +40,21 @@ export default async function handler(req, res) {
       }
     );
 
+    // Sécurité pour voir l'erreur réelle si ce n'est pas du JSON
+    if (!hfResponse.ok) {
+      const errorDetail = await hfResponse.text();
+      return res.status(200).json({ text: `Erreur HF (${hfResponse.status}): ${errorDetail}` });
+    }
+
     const result = await hfResponse.json();
     
-    // GESTION DU FORMAT DE RÉPONSE
     let aiText = "";
     if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
       aiText = result.generated_text;
-    } else if (result.error) {
-      return res.status(200).json({ text: "Note de l'IA : " + result.error });
     }
 
-    // Nettoyage de la réponse
     if (aiText.includes("[/INST]")) {
       aiText = aiText.split("[/INST]").pop().trim();
     }
