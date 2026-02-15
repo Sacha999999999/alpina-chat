@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // NOUVELLE URL 2026 : Utilisation du Router Hugging Face
+    // LA SEULE URL QUI MARCHE EN 2026 AVEC LE ROUTER
     const hfResponse = await fetch(
       "https://router.huggingface.co",
       {
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
+          inputs: `[INST] ${userMessage} [/INST]`,
           parameters: { max_new_tokens: 200 },
           options: { wait_for_model: true }
         }),
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     const result = await hfResponse.json();
     
     let aiText = "";
-    // Le Router peut renvoyer un tableau ou un objet direct
+    // On extrait le texte du tableau [0]
     if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
@@ -57,10 +57,10 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ 
-      text: aiText || "L'IA n'a pas pu générer de réponse précise. Réessayez ?" 
+      text: aiText || "L'IA n'a pas pu générer de réponse. Retentez ?" 
     });
 
   } catch (error) {
-    return res.status(200).json({ text: "Erreur de connexion au nouveau router HF." });
+    return res.status(200).json({ text: "Erreur technique : " + error.message });
   }
 }
