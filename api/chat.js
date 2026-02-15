@@ -23,36 +23,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    // NOUVELLE URL 2026 UNIVERSELLE (Chat Completions)
-    const hfResponse = await fetch("https://router.huggingface.co/hf-inference/v1/chat/completions", {
+    // Changement radical d'URL pour forcer l'accès direct au modèle
+    const hfResponse = await fetch("https://api-inference.huggingface.co/models/mistralai/mistral-7b-instruct-v0.3", {
       headers: {
         "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
         "Content-Type": "application/json",
       },
       method: "POST",
       body: JSON.stringify({
-        model: "mistralai/Mistral-7B-Instruct-v0.3",
-        messages: [
-          { role: "system", content: "Tu es un expert financier suisse professionnel." },
-          { role: "user", content: userMessage }
-        ],
-        max_tokens: 300,
-        temperature: 0.7
+        inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
+        options: { wait_for_model: true }
       }),
     });
 
     const result = await hfResponse.json();
 
-    // Si le serveur renvoie une erreur (Quota, Token, etc.)
-    if (result.error) {
-      return res.status(200).json({ text: "Note : " + (result.error.message || result.error) });
+    // Gestion du retour (Hugging Face renvoie souvent un tableau)
+    let aiText = "";
+    if (Array.isArray(result) && result.length > 0) {
+      aiText = result[0].generated_text || "";
+    } else if (result.generated_text) {
+      aiText = result.generated_text;
+    } else if (result.error) {
+      return res.status(200).json({ text: "Note IA : " + result.error });
     }
 
-    // Lecture du format "Choices" (Standard 2026)
-    const aiText = result.choices?.[0]?.message?.content || "";
+    if (aiText.includes("[/INST]")) {
+      aiText = aiText.split("[/INST]").pop().trim();
+    }
 
     return res.status(200).json({ 
-      text: aiText || "Je peux vous aider sur ce point, pouvez-vous préciser votre situation ?" 
+      text: aiText || "Désolé, l'IA n'a pas pu générer de réponse." 
     });
 
   } catch (error) {
