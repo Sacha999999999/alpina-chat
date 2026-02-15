@@ -1,8 +1,7 @@
 {
-  "name": "ia-expert-suisse",
-  "version": "1.0.0",
+  "type": "module",
   "dependencies": {
-    "@ai-sdk/huggingface": "^0.1.1",
-    "ai": "^4.1.0"
+    "@ai-sdk/huggingface": "latest",
+    "ai": "latest"
   }
 }
