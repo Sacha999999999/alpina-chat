@@ -1,14 +1,10 @@
 export default async function handler(req, res) {
-  // Autorisation pour que ton site puisse parler à Vercel
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { message } = req.body;
-
-  // Réponses instantanées pour tes boutons
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant à économiser ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider ?",
@@ -17,14 +13,11 @@ export default async function handler(req, res) {
     "Prévoyance et retraite": "Anticiper sa retraite permet de maintenir son niveau de vie. À quel âge envisagez-vous d'arrêter ?",
     "Gestion de fortune": "Une gestion rigoureuse est la clé pour pérenniser votre capital. Croissance ou sécurité ?",
     "Conseil immobilier": "L'immobilier est une valeur refuge en Suisse. Résidence principale ou rendement ?",
-    "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel est votre horizon ?"
+    "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
 
-  if (preponses[message]) {
-    return res.status(200).json({ text: preponses[message] });
-  }
+  if (preponses[message]) return res.status(200).json({ text: preponses[message] });
 
-  // Appel IA ultra-simplifié
   try {
     const response = await fetch("https://router.huggingface.co", {
       headers: { 
@@ -34,13 +27,15 @@ export default async function handler(req, res) {
       method: "POST",
       body: JSON.stringify({
         model: "mistralai/Mistral-7B-Instruct-v0.2",
-        messages: [{ role: "user", content: "Réponds en 2 phrases : " + message }],
-        max_tokens: 100
+        messages: [{ role: "user", content: "Expert Alpina Conseil : répond en 2 phrases à : " + message }],
+        max_tokens: 150
       })
     });
     const data = await response.json();
-    res.status(200).json({ text: data.choices[0].message.content });
+    // Accès sécurisé au texte selon le format Router
+    const aiText = data.choices[0].message.content;
+    res.status(200).json({ text: aiText });
   } catch (e) {
-    res.status(200).json({ text: "Une analyse personnalisée est nécessaire. Fixons un rendez-vous !" });
+    res.status(200).json({ text: "C'est une excellente question. Pour vous répondre précisément selon votre situation, seriez-vous disponible pour un court échange ?" });
   }
 }
