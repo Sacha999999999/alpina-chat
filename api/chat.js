@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: "[INST] " + userMessage + " [/INST]",
+          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
           options: { wait_for_model: true }
         }),
       }
@@ -40,21 +40,24 @@ export default async function handler(req, res) {
 
     const result = await hfResponse.json();
     
-    // Extraction simplifiée au maximum pour éviter l'erreur de connexion
-    let responseText = "";
-    if (Array.isArray(result) && result[0].generated_text) {
-        responseText = result[0].generated_text;
+    // Lecture sécurisée du tableau envoyé par Hugging Face
+    let aiText = "";
+    if (Array.isArray(result) && result.length > 0) {
+      aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
-        responseText = result.generated_text;
+      aiText = result.generated_text;
     }
 
-    const cleanText = responseText.split("[/INST]").pop().trim();
+    // Extraction de la réponse après la balise
+    if (aiText.includes("[/INST]")) {
+      aiText = aiText.split("[/INST]").pop().trim();
+    }
 
     return res.status(200).json({ 
-      text: cleanText || "Je peux vous aider, précisez votre demande ?" 
+      text: aiText || "Je peux vous aider, pouvez-vous préciser votre question ?" 
     });
 
   } catch (error) {
-    return res.status(200).json({ text: "Erreur de connexion API." });
+    return res.status(200).json({ text: "Une erreur de connexion est survenue. Veuillez réessayer." });
   }
 }
