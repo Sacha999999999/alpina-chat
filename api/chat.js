@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // URL COMPLÈTE AVEC LE CHEMIN DU MODÈLE POUR LE ROUTER
+    // URL ENFIN COMPLÈTE : Router + Chemin du modèle
     const hfResponse = await fetch(
       "https://router.huggingface.co",
       {
@@ -34,33 +34,31 @@ export default async function handler(req, res) {
         method: "POST",
         body: JSON.stringify({
           inputs: `[INST] ${userMessage} [/INST]`,
-          parameters: { max_new_tokens: 200 },
+          parameters: { max_new_tokens: 250, temperature: 0.7 },
           options: { wait_for_model: true }
         }),
       }
     );
 
-    // On vérifie si la réponse est OK avant de parser le JSON
-    if (!hfResponse.ok) {
-        const errorText = await hfResponse.text();
-        return res.status(200).json({ text: "Erreur HF (" + hfResponse.status + "): " + errorText });
-    }
-
     const result = await hfResponse.json();
     
+    // GESTION DU FORMAT DE RÉPONSE
     let aiText = "";
     if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
       aiText = result.generated_text;
+    } else if (result.error) {
+      return res.status(200).json({ text: "Note de l'IA : " + result.error });
     }
 
+    // Nettoyage de la réponse
     if (aiText.includes("[/INST]")) {
       aiText = aiText.split("[/INST]").pop().trim();
     }
 
     return res.status(200).json({ 
-      text: aiText || "L'IA n'a pas pu générer de réponse. Retentez ?" 
+      text: aiText || "Je peux vous aider, pouvez-vous préciser votre question ?" 
     });
 
   } catch (error) {
