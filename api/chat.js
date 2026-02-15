@@ -22,17 +22,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: preponses[userMessage] });
   }
 
-   try {
+  try {
     const hfResponse = await fetch(
       "https://api-inference.huggingface.co",
       {
         headers: {
-          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Authorization": "Bearer " + process.env.HUGGINGFACE_API_KEY,
           "Content-Type": "application/json",
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
+          inputs: "[INST] Tu es un expert financier suisse. Réponds brièvement à : " + userMessage + " [/INST]",
           options: { wait_for_model: true }
         }),
       }
@@ -40,9 +40,9 @@ export default async function handler(req, res) {
 
     const result = await hfResponse.json();
     
-    // CORRECTION : On ajoute l'index [0] pour lire le premier élément du tableau
     let aiText = "";
-    if (Array.isArray(result) && result[0]) {
+    // Lecture correcte du tableau [0]
+    if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
       aiText = result.generated_text;
@@ -57,5 +57,6 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    return res.status(200).json({ text: "Erreur de communication avec l'IA." });
+    return res.status(200).json({ text: "Erreur de connexion. Veuillez réessayer." });
   }
+}
