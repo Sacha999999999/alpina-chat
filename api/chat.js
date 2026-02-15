@@ -23,10 +23,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    // URL ENFIN COMPLÈTE : Router + Chemin du modèle
     const hfResponse = await fetch(
       "https://router.huggingface.co
-/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3
-",
+/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3",
       {
         headers: {
           "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -34,26 +34,26 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] Tu es un expert financier suisse. Réponds en 2 phrases à : ${userMessage} [/INST]`,
+          inputs: `[INST] ${userMessage} [/INST]`,
+          parameters: { max_new_tokens: 250, temperature: 0.7 },
           options: { wait_for_model: true }
         }),
       }
     );
 
-    if (!hfResponse.ok) {
-      const errorText = await hfResponse.text();
-      return res.status(200).json({ text: "Note HF (" + hfResponse.status + "): " + errorText });
-    }
-
     const result = await hfResponse.json();
     
+    // GESTION DU FORMAT DE RÉPONSE
     let aiText = "";
     if (Array.isArray(result) && result.length > 0) {
       aiText = result[0].generated_text || "";
     } else if (result.generated_text) {
       aiText = result.generated_text;
+    } else if (result.error) {
+      return res.status(200).json({ text: "Note de l'IA : " + result.error });
     }
 
+    // Nettoyage de la réponse
     if (aiText.includes("[/INST]")) {
       aiText = aiText.split("[/INST]").pop().trim();
     }
