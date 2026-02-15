@@ -23,7 +23,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // URL ROUTER 2026 FORMAT CHAT COMPLETIONS
     const hfResponse = await fetch(
       "https://router.huggingface.co",
       {
@@ -33,25 +32,29 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          model: "mistralai/Mistral-7B-Instruct-v0.3",
-          messages: [
-            { role: "system", content: "Tu es un expert financier suisse. Réponds brièvement." },
-            { role: "user", content: userMessage }
-          ],
-          max_tokens: 200
+          inputs: `[INST] Tu es un expert financier suisse. Réponds en 2 phrases à : ${userMessage} [/INST]`,
+          options: { wait_for_model: true }
         }),
       }
     );
 
     if (!hfResponse.ok) {
-      const err = await hfResponse.text();
-      return res.status(200).json({ text: `Erreur HF (${hfResponse.status}): ${err}` });
+      const errorText = await hfResponse.text();
+      return res.status(200).json({ text: "Note HF (" + hfResponse.status + "): " + errorText });
     }
 
     const result = await hfResponse.json();
     
-    // Le format Chat Completions renvoie : choices[0].message.content
-    const aiText = result.choices?.[0]?.message?.content || "";
+    let aiText = "";
+    if (Array.isArray(result) && result.length > 0) {
+      aiText = result[0].generated_text || "";
+    } else if (result.generated_text) {
+      aiText = result.generated_text;
+    }
+
+    if (aiText.includes("[/INST]")) {
+      aiText = aiText.split("[/INST]").pop().trim();
+    }
 
     return res.status(200).json({ 
       text: aiText || "Je peux vous aider, pouvez-vous préciser votre question ?" 
