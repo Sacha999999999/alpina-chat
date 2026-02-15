@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     "Hypothèque": "Le choix de votre stratégie hypothécaire peut vous faire économiser des dizaines de milliers de francs. Votre projet concerne-t-il un achat ou un renouvellement ?",
     "Succession": "Protéger ses proches et structurer son héritage est essentiel. Avez-vous déjà mis en place des mesures de protection pour votre famille ?",
     "Prévoyance et retraite": "Anticiper sa retraite permet de maintenir son niveau de vie sans surprises. À quel âge envisagez-vous idéalement d'arrêter votre activité ?",
-    "Gestion de fortune": "Une gestion rigoureuse est la clé pour pérenniser votre capital. Quel est votre objectif principal : la croissance ou la sécurité ?",
+    "Gestion de fortune": "Une gestion relicat de fortune est la clé pour pérenniser votre capital. Quel est votre objectif principal : la croissance ou la sécurité ?",
     "Conseil immobilier": "L'immobilier est une valeur refuge majeure en Suisse. Cherchez-vous une résidence principale ou un investissement de rendement ?",
     "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
   };
@@ -35,14 +35,9 @@ export default async function handler(req, res) {
       })
     });
     const data = await response.json();
-    // Correction de l'accès au message pour le format Router
+    // Accès sécurisé au texte pour le format Router
     const aiText = data.choices[0].message.content;
     res.status(200).json({ text: aiText });
-  } catch (e) {
-    res.status(200).json({ text: "Analyse personnalisée nécessaire. Fixons un rendez-vous !" });
-  }
-}
-
   } catch (e) {
     res.status(200).json({ text: "Analyse personnalisée nécessaire. Fixons un rendez-vous !" });
   }
