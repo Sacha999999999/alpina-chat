@@ -1,5 +1,10 @@
 export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+
   const { message } = req.body;
+  const HF_KEY = process.env.HUGGINGFACE_API_KEY;
+
+  // 1. TES RÉPONSES DE CONVERSION (Boutons)
   const preponses = {
     "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
     "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
@@ -15,31 +20,40 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: preponses[message] });
   }
 
+  // 2. APPEL IA (URL Router V1 corrigée)
   try {
     const response = await fetch(
       "https://router.huggingface.co",
       {
         headers: { 
-          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Authorization": `Bearer ${HF_KEY}`,
           "Content-Type": "application/json"
         },
         method: "POST",
         body: JSON.stringify({
           model: "mistralai/Mistral-7B-Instruct-v0.2",
-          messages: [{ role: "user", content: `Expert Alpina Conseil : répond en 2 phrases à : ${message}` }],
-          max_tokens: 150
+          messages: [
+            { role: "system", content: "Tu es l'expert d'Alpina Conseil en Suisse. Réponds en 2 phrases maximum. Termine toujours par une question pour aider le client." },
+            { role: "user", content: message }
+          ],
+          max_tokens: 150,
+          temperature: 0.5
         }),
       }
     );
 
     const data = await response.json();
-    
-    // Lecture directe et robuste du texte
-    const aiText = data.choices[0].message.content;
 
+    if (data.error) {
+       console.error("HF Error:", data.error);
+       return res.status(200).json({ text: "C'est une excellente question. Pour vous répondre précisément, seriez-vous disponible pour un court échange ?" });
+    }
+
+    const aiText = data.choices[0].message.content;
     res.status(200).json({ text: aiText });
 
   } catch (error) {
-    res.status(200).json({ text: "Une analyse personnalisée est nécessaire. Fixons un rendez-vous pour en discuter !" });
+    res.status(200).json({ text: "Une analyse personnalisée est nécessaire pour ce sujet. Souhaitez-vous fixer un rendez-vous ?" });
   }
 }
+
