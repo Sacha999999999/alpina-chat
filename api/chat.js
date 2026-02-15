@@ -23,36 +23,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const hfResponse = await fetch("https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3", {
+    // NOUVELLE URL 2026 UNIVERSELLE (Chat Completions)
+    const hfResponse = await fetch("https://router.huggingface.co", {
       headers: {
         "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
         "Content-Type": "application/json",
       },
       method: "POST",
       body: JSON.stringify({
-        inputs: `[INST] ${userMessage} [/INST]`,
-        parameters: { max_new_tokens: 250, temperature: 0.7 },
-        options: { wait_for_model: true }
+        model: "mistralai/Mistral-7B-Instruct-v0.3",
+        messages: [
+          { role: "system", content: "Tu es un expert financier suisse professionnel." },
+          { role: "user", content: userMessage }
+        ],
+        max_tokens: 300,
+        temperature: 0.7
       }),
     });
 
     const result = await hfResponse.json();
-    
-    let aiText = "";
-    if (Array.isArray(result) && result.length > 0) {
-      aiText = result[0].generated_text || "";
-    } else if (result.generated_text) {
-      aiText = result.generated_text;
-    } else if (result.error) {
-      return res.status(200).json({ text: "Note de l'IA : " + result.error });
+
+    // Si le serveur renvoie une erreur (Quota, Token, etc.)
+    if (result.error) {
+      return res.status(200).json({ text: "Note : " + (result.error.message || result.error) });
     }
 
-    if (aiText.includes("[/INST]")) {
-      aiText = aiText.split("[/INST]").pop().trim();
-    }
+    // Lecture du format "Choices" (Standard 2026)
+    const aiText = result.choices?.[0]?.message?.content || "";
 
     return res.status(200).json({ 
-      text: aiText || "Je peux vous aider, pouvez-vous préciser votre question ?" 
+      text: aiText || "Je peux vous aider sur ce point, pouvez-vous préciser votre situation ?" 
     });
 
   } catch (error) {
