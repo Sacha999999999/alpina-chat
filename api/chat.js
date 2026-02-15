@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   // 2. IA OUVERTE (Mistral)
   try {
     const { text } = await generateText({
-      model: huggingface('mistralai/Mistral-Small-24B-Instruct-2501'),
+      model: huggingface('mistralai/Mistral-7B-Instruct-v0.3'),
       prompt: userMessage,
       system: "Tu es un expert financier suisse. Réponds brièvement en 2 phrases."
     });
