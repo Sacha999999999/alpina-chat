@@ -23,37 +23,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Changement radical d'URL pour forcer l'accès direct au modèle
-    const hfResponse = await fetch("https://api-inference.huggingface.co/models/mistralai/mistral-7b-instruct-v0.3", {
+    // 1. URL DU ROUTER (COURTE ET OBLIGATOIRE)
+    const hfResponse = await fetch("https://router.huggingface.co", {
       headers: {
         "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
         "Content-Type": "application/json",
       },
       method: "POST",
       body: JSON.stringify({
-        inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
-        options: { wait_for_model: true }
+        // 2. LE MODÈLE EST ICI, PAS DANS L'URL
+        model: "mistralai/Mistral-7B-Instruct-v0.3",
+        messages: [
+          { role: "system", content: "Tu es un expert financier suisse. Réponds en 2 phrases." },
+          { role: "user", content: userMessage }
+        ],
+        max_tokens: 200
       }),
     });
 
     const result = await hfResponse.json();
 
-    // Gestion du retour (Hugging Face renvoie souvent un tableau)
-    let aiText = "";
-    if (Array.isArray(result) && result.length > 0) {
-      aiText = result[0].generated_text || "";
-    } else if (result.generated_text) {
-      aiText = result.generated_text;
-    } else if (result.error) {
-      return res.status(200).json({ text: "Note IA : " + result.error });
+    if (result.error) {
+      return res.status(200).json({ text: "Erreur HF : " + (result.error.message || result.error) });
     }
 
-    if (aiText.includes("[/INST]")) {
-      aiText = aiText.split("[/INST]").pop().trim();
-    }
+    // 3. EXTRACTION POUR LE FORMAT ROUTER/V1
+    const aiText = result.choices?.[0]?.message?.content || "";
 
     return res.status(200).json({ 
-      text: aiText || "Désolé, l'IA n'a pas pu générer de réponse." 
+      text: aiText || "Désolé, je n'ai pas pu formuler de réponse. Précisez votre demande ?" 
     });
 
   } catch (error) {
