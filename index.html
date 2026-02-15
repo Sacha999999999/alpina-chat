@@ -24,16 +24,21 @@ document.getElementById("send").onclick = async () => {
   chatDiv.appendChild(userDiv);
 
   try {
-    const res = await fetch("https://alpina-chat.vercel.app", {
+    const response = await fetch("https://alpina-chat.vercel.app", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ message })
+      mode: "cors",
+      headers: { "Content-Type": "text/plain" }, // On utilise text/plain pour éviter le blocage CORS complexe
+      body: JSON.stringify({ message: val })
     });
-    const data = await res.json();
-    const aiDiv = document.createElement("div");
-    aiDiv.textContent = "AI : " + data.text;
-    chatDiv.appendChild(aiDiv);
-  } catch {
+    const data = await response.json();
+    document.getElementById('alp-loading-indicator')?.remove();
+
+    const aiMsg = document.createElement('div');
+    aiMsg.style = "background:#fff; padding:10px; border-radius:12px 12px 12px 0; align-self:flex-start; border-left:3px solid #D4AF37; max-width:80%; box-shadow:0 2px 5px rgba(0,0,0,0.05); margin-bottom:5px; line-height:1.4; color:#333;";
+    aiMsg.textContent = data.text;
+    m.appendChild(aiMsg);
+  }
+catch {
     const errDiv = document.createElement("div");
     errDiv.textContent = "Erreur de connexion.";
     chatDiv.appendChild(errDiv);
