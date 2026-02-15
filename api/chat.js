@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: preponses[userMessage] });
   }
 
-  // 3. IA OUVERTE (Appel direct sans bibliothèque pour éviter les bugs de build)
+  // 3. IA OUVERTE (Version corrigée pour le format Mistral)
   try {
     const hfResponse = await fetch(
       "https://api-inference.huggingface.co",
@@ -36,26 +36,30 @@ export default async function handler(req, res) {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `[INST] Tu es un expert financier suisse. Réponds en 2 phrases à : ${userMessage} [/INST]`,
+          inputs: `[INST] Tu es un expert financier suisse. Réponds brièvement à : ${userMessage} [/INST]`,
           options: { wait_for_model: true }
         }),
       }
     );
 
     const result = await hfResponse.json();
-    let aiText = "";
+    
+    // Correction ici : on gère si c'est un tableau (fréquent chez HF)
+    let aiText = Array.isArray(result) ? result[0].generated_text : (result.generated_text || "");
 
-    if (Array.isArray(result)) {
-      aiText = result[0].generated_text;
-    } else {
-      aiText = result.generated_text || "";
+    // On nettoie pour ne garder que la réponse après la balise [/INST]
+    if (aiText.includes("[/INST]")) {
+      aiText = aiText.split("[/INST]").pop().trim();
     }
 
-    const cleanText = aiText.includes("[/INST]") ? aiText.split("[/INST]").pop().trim() : aiText;
-
-    return res.status(200).json({ text: cleanText || "Je peux vous aider, précisez votre demande ?" });
+    return res.status(200).json({ 
+      text: aiText || "Je peux vous aider sur ce point, pouvez-vous préciser votre question ?" 
+    });
 
   } catch (error) {
+    return res.status(200).json({ text: "Une petite erreur technique, veuillez reformuler votre question ?" });
+  }
+
     return res.status(200).json({ text: "Service en cours de mise à jour. Retentez dans une minute ?" });
   }
 }
