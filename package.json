@@ -1,7 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "@ai-sdk/huggingface": "latest",
-    "ai": "latest"
-  }
-}
