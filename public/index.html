@@ -3,100 +3,121 @@
 <head>
 <meta charset="UTF-8">
 <title>Alpina Conseil Chatbot</title>
+<style>
+  body { margin:0; font-family:Arial,sans-serif; background:#f0f2f5; }
+  #alp-chat-box { position:fixed; bottom:20px; right:20px; z-index:999999; display:flex; width:360px; height:520px; background:#fff; border:2px solid #002D58; border-radius:10px; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
+  #alp-header { background:#002D58; color:#D4AF37; padding:15px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #D4AF37; }
+  #alp-header span.close { cursor:pointer; font-size:20px; }
+  #alp-msgs { flex:1; padding:10px; overflow-y:auto; background:#f9f9f9; font-size:14px; display:flex; flex-direction:column; gap:8px; }
+  .welcome { background:#eee; padding:10px; border-radius:8px; line-height:1.4; color:#333; font-size:12.5px; }
+  #quick-buttons { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+  #quick-buttons button { background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer; }
+  #alp-input-container { display:flex; padding:10px; border-top:1px solid #ccc; }
+  #alp-input { flex:1; border:none; outline:none; font-size:14px; color:#333; }
+  #send-btn { background:#002D58; color:#D4AF37; border:none; padding:0 15px; cursor:pointer; font-size:18px; }
+  .user-msg { background:#002D58; color:white; padding:6px 10px; border-radius:10px 10px 0 10px; align-self:flex-end; max-width:85%; margin-bottom:5px; font-size:13px; }
+  .ai-msg { background:#fff; padding:10px; border-radius:12px 12px 12px 0; align-self:flex-start; border-left:3px solid #D4AF37; max-width:80%; box-shadow:0 2px 5px rgba(0,0,0,0.05); margin-bottom:5px; line-height:1.4; color:#333; }
+  .loader { background:#f0f0f0; padding:10px; border-radius:12px 12px 12px 0; align-self:flex-start; font-style:italic; color:#666; font-size:12px; border-left:3px solid #D4AF37; margin-bottom:5px; }
+</style>
 </head>
 <body>
 
-<!-- 1. LA STRUCTURE VISUELLE (HTML) -->
-<div id="alp-chat-box" style="position:fixed; bottom:80px; right:20px; z-index:999999; display:none; width:330px; height:500px; background:#fff; border:2px solid #002D58; border-radius:10px; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,0.3); font-family:Arial;">
-  
-  <!-- EN-TETE -->
-  <div style="background:#002D58; color:#D4AF37; padding:15px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #D4AF37;">
+<div id="alp-chat-box">
+  <div id="alp-header">
     <div style="display:flex; flex-direction:column;">
       <span style="font-size:16px; letter-spacing:1px; line-height:1.2;">ALPINA CONSEIL</span>
       <span style="font-weight:100; color:#fff; font-size:11px; letter-spacing:0.5px; opacity:0.9;">Votre assistant numérique</span>
     </div>
-    <span onclick="document.getElementById('alp-chat-box').style.display='none'" style="cursor:pointer; font-size:20px;">✕</span>
+    <span class="close" onclick="window.close()">✕</span>
   </div>
 
-  <div id="alp-msgs" style="flex:1; padding:10px; overflow-y:auto; background:#f9f9f9; font-size:14px; display:flex; flex-direction:column; gap:8px;">
-    <div style="background:#eee; padding:10px; border-radius:8px; line-height:1.4; color:#333; font-size:12.5px;">
+  <div id="alp-msgs">
+    <div class="welcome">
       Bonjour, nous sommes à votre écoute. Comment pouvons-nous vous aider ?<br>
       <strong>Choisissez un sujet ou <a href="https://www.alpina-conseil.ch/contact" target="_blank" style="color:#002D58; text-decoration:underline;">fixez un rendez-vous</a> :</strong>
     </div>
-
-    <div id="quick-buttons" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">
-      <button data-value="Fiscalité" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Fiscalité</button>
-      <button data-value="Conseil financier et placements" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Finances & Placements</button>
-      <button data-value="3ème pilier" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">3ème pilier</button>
-      <button data-value="Hypothèque" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Hypothèque</button>
-      <button data-value="Planification successorale" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Succession</button>
-      <button data-value="Prévoyance et retraite" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Prévoyance & Retraite</button>
-      <button data-value="Gestion de fortune" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Gestion de fortune</button>
-      <button data-value="Conseil immobilier" style="background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer;">Immobilier</button>
+    <div id="quick-buttons">
+      <button data-value="Fiscalité">Fiscalité</button>
+      <button data-value="Conseil financier et placements">Finances & Placements</button>
+      <button data-value="3ème pilier">3ème pilier</button>
+      <button data-value="Hypothèque">Hypothèque</button>
+      <button data-value="Planification successorale">Succession</button>
+      <button data-value="Prévoyance et retraite">Prévoyance & Retraite</button>
+      <button data-value="Gestion de fortune">Gestion de fortune</button>
+      <button data-value="Conseil immobilier">Immobilier</button>
     </div>
   </div>
 
-  <div style="display:flex; padding:10px; border-top:1px solid #ccc;">
-    <input type="text" id="alp-input" placeholder="Votre question..." style="flex:1; border:none; outline:none; font-size:14px; color:#333;">
-    <button id="send-btn" style="background:#002D58; color:#D4AF37; border:none; padding:0 15px; cursor:pointer; font-size:18px;">➤</button>
+  <div id="alp-input-container">
+    <input type="text" id="alp-input" placeholder="Votre question...">
+    <button id="send-btn">➤</button>
   </div>
 </div>
 
-<!-- BOUTON FLOTTANT -->
-<button id="alp-toggle" style="position:fixed; bottom:15px; right:20px; z-index:999999; background:#002D58; color:#D4AF37; border:2px solid #D4AF37; border-radius:50%; width:60px; height:60px; cursor:pointer; font-size:24px; box-shadow:0 4px 15px rgba(0,0,0,0.4);">
-💬
-</button>
-
-<!-- 2. LE MOTEUR (JAVASCRIPT) -->
 <script>
-document.getElementById('alp-toggle').onclick = function() {
-  const s = document.getElementById('alp-chat-box').style;
-  s.display = (s.display === 'flex' ? 'none' : 'flex');
-};
+const msgs = document.getElementById('alp-msgs');
+const input = document.getElementById('alp-input');
+const sendBtn = document.getElementById('send-btn');
 
+// Fonction pour ajouter message
+function addMessage(text, type) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  div.className = type === 'user' ? 'user-msg' : 'ai-msg';
+  msgs.appendChild(div);
+  msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+}
+
+// Fonction loader
+function showLoader() {
+  const l = document.createElement('div');
+  l.className = 'loader';
+  l.id = 'alp-loading-indicator';
+  l.textContent = "Alpina IA analyse votre demande...";
+  msgs.appendChild(l);
+  msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+}
+function removeLoader() { document.getElementById('alp-loading-indicator')?.remove(); }
+
+// Préquestions
 document.querySelectorAll('#quick-buttons button').forEach(btn => {
-  btn.onclick = function() {
-    const input = document.getElementById('alp-input');
-    input.value = this.dataset.value;
-    input.focus();
+  btn.onclick = () => {
+    input.value = btn.dataset.value;
+    sendMessage();
   };
 });
 
-// ✅ Fonction principale pour envoyer la question et ouvrir le chat externe
+// Envoi du message
 async function sendMessage() {
-  const input = document.getElementById('alp-input');
-  const m = document.getElementById('alp-msgs');
   const val = input.value.trim();
   if (!val) return;
   input.value = '';
+  addMessage(val,'user');
+  showLoader();
 
-  // Affiche le message utilisateur dans la bulle locale
-  const userMsg = document.createElement('div');
-  userMsg.style = "background:#002D58; color:white; padding:6px 10px; border-radius:10px 10px 0 10px; align-self:flex-end; max-width:85%; margin-bottom:5px; font-size:13px;";
-  userMsg.textContent = val;
-  m.appendChild(userMsg);
-
-  // Loader
-  const loader = document.createElement('div');
-  loader.id = "alp-loading-indicator";
-  loader.style = "background:#f0f0f0; padding:10px; border-radius:12px 12px 12px 0; align-self:flex-start; font-style:italic; color:#666; font-size:12px; border-left:3px solid #D4AF37; margin-bottom:5px;";
-  loader.textContent = "Alpina IA analyse votre demande...";
-  m.appendChild(loader);
-
-  // Ouvre une nouvelle fenêtre externe pour le chat complet (Vercel)
-  window.open(`https://alpina-chat.vercel.app/?question=${encodeURIComponent(val)}`, 'AlpinaBot', 'width=360,height=520,resizable=yes,scrollbars=yes');
-
-  document.getElementById('alp-loading-indicator')?.remove();
-  m.scrollTo({ top: m.scrollHeight, behavior: 'smooth' });
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ message: val })
+    });
+    const data = await res.json();
+    removeLoader();
+    addMessage(data.text,'ai');
+  } catch(err) {
+    removeLoader();
+    addMessage('Erreur de connexion.','ai');
+  }
 }
 
-document.getElementById('send-btn').onclick = sendMessage;
-document.getElementById('alp-input').onkeydown = function(e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    sendMessage();
-  }
-};
+// Bouton et Enter
+sendBtn.onclick = sendMessage;
+input.onkeydown = e => { if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } };
+
+// Si question via URL, l'envoyer automatiquement
+const params = new URLSearchParams(window.location.search);
+const q = params.get('question');
+if(q){ input.value = q; sendMessage(); }
 </script>
 
 </body>
