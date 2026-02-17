@@ -1,60 +1,70 @@
+import { google } from 'googleapis';
+import fetch from 'node-fetch';
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method !== 'POST') return res.status(405).json({ text: 'Method not allowed' });
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  const userMessage = req.body?.message;
+  const { message } = req.body;
 
-  const preponses = {
-    "Fiscalité": "L'optimisation fiscale est le levier le plus rapide pour augmenter votre revenu disponible. Avez-vous une idée du montant que vous souhaiteriez économiser cette année ?",
-    "3ème pilier": "Les 3ème piliers sont une excellente opportunité de développement de patrimoine et de protection. En quoi puis-je vous aider précisément sur ce sujet ?",
-    "Hypothèque": "Le choix de votre stratégie hypothécaire peut vous faire économiser des dizaines de milliers de francs. Votre projet concerne-t-il un achat ou un renouvellement ?",
-    "Succession": "Protéger ses proches et structurer son héritage est essentiel. Avez-vous déjà mis en place des mesures de protection ?",
-    "Prévoyance et retraite": "Anticiper sa retraite permet de maintenir son niveau de vie sans surprises. À quel âge envisagez-vous d'arrêter ?",
-    "Gestion de fortune": "Une gestion rigoureuse est la clé pour pérenniser votre capital. Quel est votre objectif principal : la croissance ou la sécurité ?",
-    "Conseil immobilier": "L'immobilier est une valeur refuge majeure en Suisse. Cherchez-vous une résidence principale ou un investissement de rendement ?",
-    "Conseil financier et placements": "Placer son capital intelligemment nécessite une vision globale. Quel horizon de placement envisagez-vous ?"
-  };
+  if (!message) return res.status(400).json({ text: 'Message vide' });
 
-  if (userMessage && preponses[userMessage]) {
-    return res.status(200).json({ text: preponses[userMessage] });
+  // 1️⃣ Enregistrer le message dans Google Sheets
+  try {
+    const auth = new google.auth.GoogleAuth({
+      credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.SHEET_ID,
+      range: 'Chats!A:C',
+      valueInputOption: 'RAW',
+      resource: { values: [[new Date().toISOString(), message, '']] },
+    });
+  } catch (err) {
+    console.error('Erreur Google Sheets:', err);
   }
 
+  // 2️⃣ Appeler GPT pour générer la réponse
   try {
-    // L'URL DOIT ETRE EXACTEMENT CELLE-CI POUR EVITER LE "NOT FOUND"
-    const hfUrl = "https://router.huggingface.co/hf-inference/v1/chat/completions";
-
-    const hfResponse = await fetch(hfUrl, {
+    const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      method: "POST",
       body: JSON.stringify({
-        model: "mistralai/Mistral-7B-Instruct-v0.3",
-        messages: [
-          { role: "system", content: "Tu es un expert financier suisse. Réponds brièvement en 2 phrases." },
-          { role: "user", content: userMessage }
-        ],
-        max_tokens: 300
-      }),
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: message }],
+        temperature: 0.6
+      })
     });
 
-    const result = await hfResponse.json();
+    const data = await gptRes.json();
+    const reply = data.choices?.[0]?.message?.content || 'Je n’ai pas compris votre question.';
 
-    if (result.error) {
-      return res.status(200).json({ text: "Note HF : " + (result.error.message || JSON.stringify(result.error)) });
+    // 3️⃣ Enregistrer la réponse dans Google Sheets
+    try {
+      const auth = new google.auth.GoogleAuth({
+        credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT),
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      });
+
+      const sheets = google.sheets({ version: 'v4', auth });
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: process.env.SHEET_ID,
+        range: 'Chats!A:C',
+        valueInputOption: 'RAW',
+        resource: { values: [[new Date().toISOString(), message, reply]] },
+      });
+    } catch (err) {
+      console.error('Erreur Google Sheets (réponse):', err);
     }
 
-    // Extraction du format standard Router/OpenAI
-    const aiText = result.choices?.[0]?.message?.content || "";
-
-    return res.status(200).json({ 
-      text: aiText || "Désolé, je n'ai pas pu formuler de réponse. Précisez votre demande ?" 
-    });
-
-  } catch (error) {
-    return res.status(200).json({ text: "Erreur technique : " + error.message });
+    res.status(200).json({ text: reply });
+  } catch (err) {
+    console.error('Erreur GPT:', err);
+    res.status(500).json({ text: 'Erreur IA, réessayez plus tard.' });
   }
 }
