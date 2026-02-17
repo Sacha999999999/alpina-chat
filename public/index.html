@@ -4,14 +4,7 @@
 <meta charset="UTF-8">
 <title>Alpina Conseil Chatbot</title>
 <style>
-html, body {
-  margin:0;
-  padding:0;
-  height:100%;
-  overflow:hidden;
-  font-family:Arial,sans-serif;
-}
-
+html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:Arial,sans-serif; }
 #alp-chat-box {
   width:100%;
   height:100%;
@@ -23,7 +16,6 @@ html, body {
   box-shadow:0 10px 30px rgba(0,0,0,0.3);
   background:#fff;
 }
-
 #alp-header {
   background:#002D58;
   color:#D4AF37;
@@ -34,106 +26,17 @@ html, body {
   align-items:center;
   border-bottom:2px solid #D4AF37;
 }
-
-#alp-header span.close {
-  cursor:pointer;
-  font-size:20px;
-}
-
-#alp-msgs {
-  flex: 1;
-  padding:10px;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  background:#f9f9f9;
-}
-
-#welcome-msg {
-  background:#eee;
-  padding:10px;
-  border-radius:8px;
-  line-height:1.4;
-  color:#333;
-  font-size:12.5px;
-}
-
-#quick-buttons {
-  display:flex;
-  flex-wrap:wrap;
-  gap:5px;
-  margin-top:5px;
-}
-
-#quick-buttons button {
-  background:#fff;
-  border:1px solid #002D58;
-  color:#002D58;
-  border-radius:15px;
-  padding:5px 10px;
-  font-size:11px;
-  cursor:pointer;
-}
-
-#alp-input-container {
-  display:flex;
-  padding:10px;
-  border-top:1px solid #ccc;
-}
-
-#alp-input {
-  flex:1;
-  border:none;
-  outline:none;
-  font-size:14px;
-  color:#333;
-}
-
-#send-btn {
-  background:#002D58;
-  color:#D4AF37;
-  border:none;
-  padding:0 15px;
-  cursor:pointer;
-  font-size:18px;
-}
-
-.user-msg {
-  background:#002D58;
-  color:white;
-  padding:6px 10px;
-  border-radius:10px 10px 0 10px;
-  align-self:flex-end;
-  max-width:85%;
-  margin-bottom:5px;
-  font-size:13px;
-}
-
-.ai-msg {
-  background:#fff;
-  padding:10px;
-  border-radius:12px 12px 12px 0;
-  align-self:flex-start;
-  border-left:3px solid #D4AF37;
-  max-width:80%;
-  box-shadow:0 2px 5px rgba(0,0,0,0.05);
-  margin-bottom:5px;
-  line-height:1.4;
-  color:#333;
-}
-
-.loader {
-  background:#f0f0f0;
-  padding:10px;
-  border-radius:12px 12px 12px 0;
-  align-self:flex-start;
-  font-style:italic;
-  color:#666;
-  font-size:12px;
-  border-left:3px solid #D4AF37;
-  margin-bottom:5px;
-}
+#alp-header span.close { cursor:pointer; font-size:20px; }
+#alp-msgs { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f9f9f9; }
+#welcome-msg { background:#eee; padding:10px; border-radius:8px; line-height:1.4; color:#333; font-size:12.5px; }
+#quick-buttons { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+#quick-buttons button { background:#fff; border:1px solid #002D58; color:#002D58; border-radius:15px; padding:5px 10px; font-size:11px; cursor:pointer; }
+#alp-input-container { display:flex; padding:10px; border-top:1px solid #ccc; }
+#alp-input { flex:1; border:none; outline:none; font-size:14px; color:#333; }
+#send-btn { background:#002D58; color:#D4AF37; border:none; padding:0 15px; cursor:pointer; font-size:18px; }
+.user-msg { background:#002D58; color:white; padding:6px 10px; border-radius:10px 10px 0 10px; align-self:flex-end; max-width:85%; margin-bottom:5px; font-size:13px; }
+.ai-msg { background:#fff; padding:10px; border-radius:12px 12px 12px 0; align-self:flex-start; border-left:3px solid #D4AF37; max-width:80%; box-shadow:0 2px 5px rgba(0,0,0,0.05); margin-bottom:5px; line-height:1.4; color:#333; }
+.loader { background:#f0f0f0; padding:10px; border-radius:12px 12px 12px 0; align-self:flex-start; font-style:italic; color:#666; font-size:12px; border-left:3px solid #D4AF37; margin-bottom:5px; }
 </style>
 </head>
 <body>
@@ -152,7 +55,6 @@ html, body {
       Bonjour, nous sommes à votre écoute. Comment pouvons-nous vous aider ?<br>
       <strong>Choisissez un sujet ou <a href="https://www.alpina-conseil.ch/contact" target="_blank" style="color:#002D58; text-decoration:underline;">fixez un rendez-vous</a> :</strong>
     </div>
-
     <div id="quick-buttons">
       <button data-value="Fiscalité">Fiscalité</button>
       <button data-value="Conseil financier et placements">Finances & Placements</button>
@@ -176,22 +78,23 @@ const msgs = document.getElementById('alp-msgs');
 const input = document.getElementById('alp-input');
 const sendBtn = document.getElementById('send-btn');
 
-function addMessage(text, type){
-  const div = document.createElement('div');
-  div.textContent = text;
-  div.className = type==='user'?'user-msg':'ai-msg';
+function addMessage(text,type){
+  const div=document.createElement('div');
+  div.textContent=text;
+  div.className=type==='user'?'user-msg':'ai-msg';
   msgs.appendChild(div);
-  msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+  msgs.scrollTo({top:msgs.scrollHeight,behavior:'smooth'});
 }
 
 function showLoader(){
-  const l = document.createElement('div');
+  const l=document.createElement('div');
   l.className='loader';
   l.id='alp-loading-indicator';
   l.textContent="Alpina IA analyse votre demande...";
   msgs.appendChild(l);
-  msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+  msgs.scrollTo({top:msgs.scrollHeight,behavior:'smooth'});
 }
+
 function removeLoader(){ document.getElementById('alp-loading-indicator')?.remove(); }
 
 // Préquestions
@@ -202,7 +105,7 @@ document.querySelectorAll('#quick-buttons button').forEach(btn=>{
   };
 });
 
-// Envoi du message
+// Envoi message
 async function sendMessage(){
   const val=input.value.trim();
   if(!val) return;
@@ -229,7 +132,7 @@ async function sendMessage(){
 sendBtn.onclick=sendMessage;
 input.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } };
 
-// Envoi automatique si question dans URL
+// Si question dans URL
 const params=new URLSearchParams(window.location.search);
 const q=params.get('question');
 if(q){ input.value=q; sendMessage(); }
